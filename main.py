@@ -1,76 +1,54 @@
 import streamlit as st
-from icon import icon_star,icon_person,icon_medal,icon_today,icon_search
+from sidebar import create_sidebar
+import important 
 
-#sidebar
-#load font awesome
-st.markdown(
-    '''
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    ''',
-    unsafe_allow_html=True
-)
-
-with st.container():
-    
-    st.sidebar.title("Find here...")
-    with st.sidebar.container(border=True):
-        search_option = st.sidebar.text_input("Search here...",icon_search())    
-
-    col1, col2, col3, col4 = st.sidebar.columns(4)
-    with col1:
-        st.markdown(f'<div style="display: flex; align-items: center; margin-bottom: 20px;"><i class="fa-solid fa-calendar-week" style="color: #63E6BE;"></i><span style="margin-left: 8px;">Today</span></div>', unsafe_allow_html=True)
-         
-    with col2:
-        st.markdown(f'<div style="display: flex; align-items: center; margin-bottom: 20px;"><i class="fa-solid fa-person" style="color: #63E6BE;"></i><span style="margin-left: 8px;">Assigned to me</span></div>', unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f'<div style="display: flex; align-items: center; margin-bottom: 20px;"><i class="fa-regular fa-star" style="color: #63E6BE;"></i><span style="margin-left: 8px;">Important</span></div>', unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown(f'<div style="display: flex; align-items: center; margin-bottom: 20px;"><i class="fa-solid fa-medal" style="color: #63E6BE;"></i><span style="margin-left: 8px;">Completed</span></div>', unsafe_allow_html=True)
-
-
-    st.sidebar.button("Add list")
-    
-
-
-#main home
-
+# Initialize session state variables
 if 'tasks' not in st.session_state:
     st.session_state.tasks = []
+if 'important_tasks' not in st.session_state:
+    st.session_state.important_tasks = []
+if 'view' not in st.session_state:
+    st.session_state.view = "home"
 
-def remove_task(task):
-    st.session_state.tasks.remove(task)
 
-st.header('My Todo')
+create_sidebar()
 
-add_task = st.text_area("Enter your task")
+if st.session_state.view == "important":
+    important.show_important_tasks()
+else:
+    # Your existing todo list logic
+    st.header('My Todo')
 
-submit_button = st.button("Submit")
+    add_task = st.text_area("Enter your task")
+    add_time = st.date_input("Choose date...")
 
-if(submit_button):
-    if not (add_task):
-        st.warning(f"Add your task first....")
+    submit_button = st.button("Submit")
+
+    if submit_button:
+        if not add_task:
+            st.warning("Add your task first....")
+        else:
+            st.session_state.tasks.append(add_task)
+            st.balloons()
+            st.success("Task added successfully!")
+
+    st.divider()
+
+    if not st.session_state.tasks:
+        st.write("No tasks added...")
     else:
-        st.session_state.tasks.append(add_task)
-        st.balloons()
-        st.success(f"We added your task...")
+        st.write("Your added tasks")
+        for task in st.session_state.tasks:
+            task_container = st.container()
+            with task_container:
+                col1, col2, col3 = st.columns([3, 1, 1])
+                col1.write(f"- {task}")
 
+                if col2.button("⭐", key=f"star_{task}"):  
+                    if task not in st.session_state.important_tasks:             
+                        st.session_state.important_tasks.append(task)
+                        st.success(f"Added to Important: {task}")
 
-st.divider()
-
-st.write(f"Your added tasks")
-for task in st.session_state.tasks:
-    task_container = st.container()
-    with task_container:
-        col1, col2 = st.columns([4, 1])  # Two columns for task and button
-        col1.write(f"- {task}")
-        if col2.button("Remove", key=task):  
-            remove_task(task)
-            st.success(f"Removed task: {task}")
-            
-
-# sentiment_mapping = ["one", "two", "three", "four", "five"]
-# selected = st.feedback("stars")
-# if selected is not None:
-#     st.markdown(f"You selected {sentiment_mapping[selected]} star(s).")
+                if col3.button("Remove", key=task):  
+                    st.session_state.tasks.remove(task)
+                    st.success(f"Removed task: {task}")
