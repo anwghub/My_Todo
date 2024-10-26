@@ -139,3 +139,7 @@ else:
                         st.session_state.tasks = [t for t in st.session_state.tasks if t != task]
                         save_tasks(st.session_state.tasks)
                         st.success(f"Removed task: {task['task']}")
+
+if st.session_state.get('rerun', False):
+        st.session_state['rerun'] = False
+        st.rerun()
