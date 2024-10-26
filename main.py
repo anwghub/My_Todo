@@ -5,35 +5,58 @@ from datetime import datetime
 import json
 
 TASKS_FILE = "todo.json"
+IMPORTANT_TASKS_FILE = "important_tasks.json"
+COMPLETED_TASKS_FILE = "completed_tasks.json"
 
-# Helper function to load tasks from the file
+# Helper functions to load and save tasks
 def load_tasks():
     try:
         with open(TASKS_FILE, "r") as file:
             return json.load(file)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+    
+def load_important_tasks():
+    try:
+        with open(IMPORTANT_TASKS_FILE, "r") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
         return []
 
-# Helper function to save tasks to the file
+def load_completed_tasks():
+    try:
+        with open(COMPLETED_TASKS_FILE, "r") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
 def save_tasks(tasks):
     with open(TASKS_FILE, "w") as file:
+        json.dump(tasks, file)
+
+def save_important_tasks(tasks):
+    with open(IMPORTANT_TASKS_FILE, "w") as file:
+        json.dump(tasks, file)
+
+def save_completed_tasks(tasks):
+    with open(COMPLETED_TASKS_FILE, "w") as file:
         json.dump(tasks, file)
 
 # Initialize session state variables
 if 'tasks' not in st.session_state:
     st.session_state.tasks = load_tasks()
 if 'important_tasks' not in st.session_state:
-    st.session_state.important_tasks = []
+    st.session_state.important_tasks = load_important_tasks()
 if 'view' not in st.session_state:
     st.session_state.view = "tasks"
 if 'completed_tasks' not in st.session_state:
-    st.session_state.completed_tasks = []
+    st.session_state.completed_tasks = load_completed_tasks()
 
 create_sidebar()
 
 def get_due_tasks():
     today = datetime.today().date()
-    return [task for task in st.session_state.tasks if task['date'] == str(today)]  # Convert date to string for comparison
+    return [task for task in st.session_state.tasks if task['date'] == str(today)]
 
 if st.session_state.view == "important":
     important.show_important_tasks()
@@ -71,9 +94,8 @@ else:
         if not add_task:
             st.warning("Add your task first....")
         else:
-            # Store the task as a dictionary
             st.session_state.tasks.append({'task': add_task, 'date': str(add_time)})
-            save_tasks(st.session_state.tasks)  # Save tasks to the JSON file
+            save_tasks(st.session_state.tasks)
             st.balloons()
             st.success("Task added successfully!")
 
@@ -96,22 +118,29 @@ else:
             with task_container:
                 col1, col2, col3, col4 = st.columns([1, 2, 1, 1])
                 with col1:
-                    completed = st.checkbox("", key=f"checkbox_{task['task']}")  
+                    completed = st.checkbox("Mark as complete", key=f"checkbox_{task['task']}",label_visibility="collapsed")  
                     if completed:
                         if task['task'] not in st.session_state.completed_tasks:
                             st.session_state.completed_tasks.append(task['task'])
-                            st.session_state.tasks.remove(task)  # Remove from active tasks
-                            save_tasks(st.session_state.tasks)  # Save updated tasks
-                            st.success(f"Task marked as completed: {task['task']}")
+                            st.session_state.tasks = [t for t in st.session_state.tasks if t != task]
+                            save_tasks(st.session_state.tasks)
+                            save_completed_tasks(st.session_state.completed_tasks)
+                            st.rerun()
                 with col2:
                     st.write(f"{task['task']} (Due Date: {task['date']})") 
                 with col3:
                     if st.button("⭐", key=f"star_{task['task']}"):  
                         if task['task'] not in st.session_state.important_tasks:             
                             st.session_state.important_tasks.append(task['task'])
+                            save_important_tasks(st.session_state.important_tasks)
                             st.success(f"Added to Important: {task['task']}")
                 with col4:
                     if st.button("Remove", key=f"remove_{task['task']}"):  
-                        st.session_state.tasks.remove(task)
-                        save_tasks(st.session_state.tasks)  # Save updated tasks
+                        st.session_state.tasks = [t for t in st.session_state.tasks if t != task]
+                        save_tasks(st.session_state.tasks)
                         st.success(f"Removed task: {task['task']}")
+                        st.rerun()
+                        break
+                      
+                        
+                        
