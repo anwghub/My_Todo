@@ -15,7 +15,7 @@ def load_tasks():
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         return []
-    
+
 def load_important_tasks():
     try:
         with open(IMPORTANT_TASKS_FILE, "r") as file:
@@ -113,34 +113,29 @@ else:
         st.write("No tasks added...")
     else:
         st.header("Your added tasks")
-        for task in st.session_state.tasks:
+        for idx, task in enumerate(st.session_state.tasks):  # Use idx to ensure unique keys
             task_container = st.container()
             with task_container:
                 col1, col2, col3, col4 = st.columns([1, 2, 1, 1])
                 with col1:
-                    completed = st.checkbox("Mark as complete", key=f"checkbox_{task['task']}",label_visibility="collapsed")  
+                    completed = st.checkbox("Mark as complete", key=f"checkbox_{idx}", label_visibility="collapsed")  
                     if completed:
                         if task['task'] not in st.session_state.completed_tasks:
                             st.session_state.completed_tasks.append(task['task'])
                             st.session_state.tasks = [t for t in st.session_state.tasks if t != task]
                             save_tasks(st.session_state.tasks)
                             save_completed_tasks(st.session_state.completed_tasks)
-                            st.rerun()
+                            st.experimental_rerun()
                 with col2:
                     st.write(f"{task['task']} (Due Date: {task['date']})") 
                 with col3:
-                    if st.button("⭐", key=f"star_{task['task']}"):  
+                    if st.button("⭐", key=f"star_{idx}"):  
                         if task['task'] not in st.session_state.important_tasks:             
                             st.session_state.important_tasks.append(task['task'])
                             save_important_tasks(st.session_state.important_tasks)
                             st.success(f"Added to Important: {task['task']}")
                 with col4:
-                    if st.button("Remove", key=f"remove_{task['task']}"):  
+                    if st.button("Remove", key=f"remove_{idx}"):  
                         st.session_state.tasks = [t for t in st.session_state.tasks if t != task]
                         save_tasks(st.session_state.tasks)
                         st.success(f"Removed task: {task['task']}")
-                        st.rerun()
-                        break
-                      
-                        
-                        
